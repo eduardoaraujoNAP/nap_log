@@ -1,0 +1,9 @@
+CREATE TABLE "journeys" ("id" UUID PRIMARY KEY, "tenant_id" UUID NOT NULL REFERENCES "tenants"("id"), "driver_id" UUID NOT NULL, "status" VARCHAR(24) NOT NULL DEFAULT 'active', "started_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "ended_at" TIMESTAMPTZ(3), FOREIGN KEY ("tenant_id","driver_id") REFERENCES "drivers"("tenant_id","id"));
+CREATE UNIQUE INDEX "journeys_tenant_id_id_key" ON "journeys"("tenant_id","id");
+CREATE INDEX "journeys_driver_status_idx" ON "journeys"("tenant_id","driver_id","status");
+CREATE TABLE "mobile_command_receipts" ("id" UUID PRIMARY KEY, "tenant_id" UUID NOT NULL REFERENCES "tenants"("id"), "device_id" UUID NOT NULL, "client_command_id" UUID NOT NULL, "command_type" VARCHAR(40) NOT NULL, "result" JSONB NOT NULL, "occurred_at" TIMESTAMPTZ(3) NOT NULL, "received_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX "mobile_receipt_idempotency_key" ON "mobile_command_receipts"("tenant_id","device_id","client_command_id");
+CREATE TABLE "gps_points" ("id" UUID PRIMARY KEY, "tenant_id" UUID NOT NULL REFERENCES "tenants"("id"), "journey_id" UUID NOT NULL, "client_point_id" UUID NOT NULL, "latitude" DOUBLE PRECISION NOT NULL CHECK ("latitude" BETWEEN -90 AND 90), "longitude" DOUBLE PRECISION NOT NULL CHECK ("longitude" BETWEEN -180 AND 180), "accuracy" DOUBLE PRECISION NOT NULL CHECK ("accuracy" BETWEEN 0 AND 10000), "location" geography(Point,4326) NOT NULL, "recorded_at" TIMESTAMPTZ(3) NOT NULL, "received_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY ("tenant_id","journey_id") REFERENCES "journeys"("tenant_id","id"));
+CREATE UNIQUE INDEX "gps_points_idempotency_key" ON "gps_points"("tenant_id","journey_id","client_point_id");
+CREATE INDEX "gps_points_timeline_idx" ON "gps_points"("tenant_id","journey_id","recorded_at");
+CREATE INDEX "gps_points_location_gist" ON "gps_points" USING GIST ("location");

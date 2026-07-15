@@ -1,0 +1,1 @@
+export default function Drivers() { return <div className="page placeholder-page"><p className="eyebrow">EM BREVE</p><h1>Gestão de motoristas</h1><p>Cadastros, veículos e jornadas serão adicionados na próxima etapa.</p></div>; }

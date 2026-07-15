@@ -1,0 +1,1 @@
+export default function Planning() { return <div className="page placeholder-page"><p className="eyebrow">EM BREVE</p><h1>Planejamento de rotas</h1><p>Distribuição de atividades e montagem de rotas serão adicionadas na próxima etapa.</p></div>; }

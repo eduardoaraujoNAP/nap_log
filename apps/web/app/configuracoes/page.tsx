@@ -1,0 +1,1 @@
+export default function Settings() { return <div className="page placeholder-page"><p className="eyebrow">ADMINISTRAÇÃO</p><h1>Configurações</h1><p>Empresas, usuários, integrações e políticas serão configurados aqui.</p></div>; }

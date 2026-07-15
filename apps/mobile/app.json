@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "NAP Log",
+    "slug": "nap-log",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "naplog",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.naplog.mobile", "infoPlist": { "UIBackgroundModes": ["location"] } },
+    "android": { "package": "com.naplog.mobile", "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_LOCATION"] },
+    "plugins": ["expo-router", "expo-sqlite", ["expo-location", { "locationAlwaysAndWhenInUsePermission": "Permitir que o NAP Log registre a rota durante uma jornada ativa." }], ["expo-camera", { "cameraPermission": "Permitir que o NAP Log fotografe o comprovante da operação.", "microphonePermission": false, "recordAudioAndroid": false }], "expo-secure-store"],
+    "experiments": { "typedRoutes": true }
+  }
+}

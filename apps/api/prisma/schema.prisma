@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum ActivityStatus {
+  DRAFT @map("draft")
+  AWAITING_ASSIGNMENT @map("awaiting_assignment")
+  ASSIGNED @map("assigned")
+  ACCEPTED @map("accepted")
+  EN_ROUTE @map("en_route")
+  NEAR_DESTINATION @map("near_destination")
+  ON_SITE @map("on_site")
+  IN_SERVICE @map("in_service")
+  COMPLETED @map("completed")
+  FAILED @map("failed")
+  RESCHEDULED @map("rescheduled")
+  CANCELED @map("canceled")
+  RETURNED @map("returned")
+  @@map("activity_status")
+}
+
+model Tenant {
+ id String @id @default(uuid()) @db.Uuid
+ name String @db.VarChar(160)
+ active Boolean @default(true)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+ companies Company[]
+ users User[]
+ drivers Driver[]
+ vehicles Vehicle[]
+ activities Activity[]
+ assignments Assignment[]
+ journeys Journey[]
+ events ActivityEvent[]
+ mobileReceipts MobileCommandReceipt[]
+ gpsPoints GpsPoint[]
+ receivers Receiver[]
+ evidences Evidence[]
+ proofs Proof[]
+ outboxEvents OutboxEvent[]
+ @@map("tenants")
+}
+model Company {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ name String @db.VarChar(160)
+ taxId String? @map("tax_id") @db.VarChar(32)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ branches Branch[]
+ users User[]
+ drivers Driver[]
+ vehicles Vehicle[]
+ activities Activity[]
+ @@unique([tenantId,id])
+ @@unique([tenantId,taxId])
+ @@index([tenantId])
+ @@map("companies")
+}
+model Branch {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ companyId String @map("company_id") @db.Uuid
+ name String @db.VarChar(160)
+ code String @db.VarChar(60)
+ company Company @relation(fields:[tenantId,companyId],references:[tenantId,id],onDelete:Restrict)
+ users User[]
+ activities Activity[]
+ @@unique([tenantId,id])
+ @@unique([tenantId,companyId,code])
+ @@index([tenantId,companyId])
+ @@map("branches")
+}
+model User {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ companyId String? @map("company_id") @db.Uuid
+ branchId String? @map("branch_id") @db.Uuid
+ externalId String @map("external_id") @db.VarChar(160)
+ email String @db.VarChar(254)
+ displayName String @map("display_name") @db.VarChar(160)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ company Company? @relation(fields:[tenantId,companyId],references:[tenantId,id],onDelete:Restrict)
+ branch Branch? @relation(fields:[tenantId,branchId],references:[tenantId,id],onDelete:Restrict)
+ @@unique([tenantId,externalId])
+ @@unique([tenantId,email])
+ @@index([tenantId,companyId,branchId])
+ @@map("users")
+}
+model Driver {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ companyId String @map("company_id") @db.Uuid
+ name String @db.VarChar(160)
+ document String? @db.VarChar(120)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ company Company @relation(fields:[tenantId,companyId],references:[tenantId,id],onDelete:Restrict)
+ assignments Assignment[]
+ journeys Journey[]
+ @@unique([tenantId,id])
+ @@unique([tenantId,document])
+ @@index([tenantId,companyId])
+ @@map("drivers")
+}
+model Vehicle {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ companyId String @map("company_id") @db.Uuid
+ plate String @db.VarChar(16)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ company Company @relation(fields:[tenantId,companyId],references:[tenantId,id],onDelete:Restrict)
+ @@unique([tenantId,plate])
+ @@index([tenantId,companyId])
+ @@map("vehicles")
+}
+model Activity {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ companyId String? @map("company_id") @db.Uuid
+ branchId String? @map("branch_id") @db.Uuid
+ externalReference String? @map("external_reference") @db.VarChar(120)
+ description String @db.VarChar(500)
+ address String @db.VarChar(500)
+ destination Unsupported("geography(Point,4326)")?
+ status ActivityStatus @default(AWAITING_ASSIGNMENT)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+ updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ company Company? @relation(fields:[tenantId,companyId],references:[tenantId,id],onDelete:Restrict)
+ branch Branch? @relation(fields:[tenantId,branchId],references:[tenantId,id],onDelete:Restrict)
+ assignments Assignment[]
+ events ActivityEvent[]
+ receivers Receiver[]
+ evidences Evidence[]
+ proofs Proof[]
+ @@unique([tenantId,id])
+ @@unique([tenantId,externalReference])
+ @@index([tenantId,status,updatedAt])
+ @@map("activities")
+}
+model Journey {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ driverId String @map("driver_id") @db.Uuid
+ status String @default("active") @db.VarChar(24)
+ startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(3)
+ endedAt DateTime? @map("ended_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ driver Driver @relation(fields:[tenantId,driverId],references:[tenantId,id],onDelete:Restrict)
+ gpsPoints GpsPoint[]
+ @@unique([tenantId,id])
+ @@index([tenantId,driverId,status])
+ @@map("journeys")
+}
+model MobileCommandReceipt {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ deviceId String @map("device_id") @db.Uuid
+ clientCommandId String @map("client_command_id") @db.Uuid
+ commandType String @map("command_type") @db.VarChar(40)
+ result Json
+ occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+ receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ @@unique([tenantId,deviceId,clientCommandId])
+ @@index([tenantId,receivedAt])
+ @@map("mobile_command_receipts")
+}
+model GpsPoint {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ journeyId String @map("journey_id") @db.Uuid
+ clientPointId String @map("client_point_id") @db.Uuid
+ latitude Float
+ longitude Float
+ accuracy Float
+ location Unsupported("geography(Point,4326)")
+ recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
+ receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ journey Journey @relation(fields:[tenantId,journeyId],references:[tenantId,id],onDelete:Restrict)
+ @@unique([tenantId,journeyId,clientPointId])
+ @@index([tenantId,journeyId,recordedAt])
+ @@map("gps_points")
+}
+model Assignment {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ driverId String @map("driver_id") @db.Uuid
+ assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(3)
+ endedAt DateTime? @map("ended_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ driver Driver @relation(fields:[tenantId,driverId],references:[tenantId,id],onDelete:Restrict)
+ @@index([tenantId,activityId,endedAt])
+ @@index([tenantId,driverId,endedAt])
+ @@map("assignments")
+}
+model ActivityEvent {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ type String @db.VarChar(80)
+ payload Json
+ occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ @@index([tenantId,activityId,occurredAt])
+ @@map("activity_events")
+}
+model Receiver {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ name String @db.VarChar(160)
+ version Int
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ @@unique([tenantId,activityId,version])
+ @@map("receivers")
+}
+model Evidence {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ kind String @db.VarChar(32)
+ origin String @db.VarChar(24)
+ status String @default("initiated") @db.VarChar(24)
+ objectKey String @unique @map("object_key") @db.VarChar(500)
+ mimeType String @map("mime_type") @db.VarChar(120)
+ expectedSize Int @map("expected_size")
+ actualSize Int? @map("actual_size")
+ expectedSha256 String @map("expected_sha256") @db.Char(64)
+ sha256 String? @db.Char(64)
+ version Int @default(1)
+ confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ proofLinks ProofEvidence[]
+ @@unique([tenantId,id])
+ @@index([tenantId,activityId,status,kind])
+ @@map("evidences")
+}
+model Proof {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ version Int
+ status String @default("pending") @db.VarChar(24)
+ publicCode String @unique @map("public_code") @db.VarChar(80)
+ manifest Json
+ objectBucket String? @map("object_bucket") @db.VarChar(120)
+ objectKey String? @map("object_key") @db.VarChar(500)
+ sha256 String? @db.Char(64)
+ size Int?
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ evidences ProofEvidence[]
+ @@unique([tenantId,id])
+ @@unique([tenantId,activityId,version])
+ @@map("proofs")
+}
+model OutboxEvent {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ type String @db.VarChar(100)
+ aggregateId String @map("aggregate_id") @db.Uuid
+ payload Json
+ status String @default("pending") @db.VarChar(24)
+ attempts Int @default(0)
+ nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+ processedAt DateTime? @map("processed_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ @@index([status,nextAttemptAt])
+ @@index([tenantId,type,createdAt])
+ @@map("outbox_events")
+}
+model ProofEvidence {
+ tenantId String @map("tenant_id") @db.Uuid
+ proofId String @map("proof_id") @db.Uuid
+ evidenceId String @map("evidence_id") @db.Uuid
+ proof Proof @relation(fields:[tenantId,proofId],references:[tenantId,id])
+ evidence Evidence @relation(fields:[tenantId,evidenceId],references:[tenantId,id])
+ @@id([tenantId,proofId,evidenceId])
+ @@map("proof_evidences")
+}
