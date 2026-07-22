@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+const apiUrl = process.env.API_URL?.replace(/\/$/, "");
 const devBypass = process.env.NODE_ENV === "development" && process.env.DEV_AUTH_BYPASS === "true";
 
 export async function forwardToApi(request: Request, path: string, init: RequestInit = {}): Promise<NextResponse> {

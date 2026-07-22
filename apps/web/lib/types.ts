@@ -1,35 +1,3 @@
-export type ActivityStatus = "Em rota" | "No local" | "Pendente" | "Concluída" | "Atenção";
-
-export interface Activity {
-  id: string;
-  reference: string;
-  customer: string;
-  address: string;
-  driver: string;
-  status: ActivityStatus;
-  scheduledAt: string;
-  kind: "Entrega" | "Coleta";
-}
-
-export interface DriverPosition {
-  id: string;
-  name: string;
-  initials: string;
-  vehicle: string;
-  status: "Em rota" | "Disponível" | "Parado";
-  lastUpdate: string;
-  x: number;
-  y: number;
-}
-
-export interface DashboardMetric {
-  label: string;
-  value: string;
-  detail: string;
-  trend?: string;
-  tone: "blue" | "green" | "orange" | "purple";
-}
-
 export const apiActivityStatuses = [
   "draft", "awaiting_assignment", "assigned", "accepted", "en_route",
   "near_destination", "on_site", "in_service", "completed", "failed",
@@ -58,3 +26,19 @@ export interface CreateActivityInput {
 }
 
 export interface AssignActivityInput { driverId: string }
+
+export interface LatestPosition {
+  journeyId: string;
+  driverId: string;
+  driverName: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  recordedAt: string;
+  status: "online" | "stale";
+}
+
+export interface DriverRecord { id:string;tenantId:string;companyId:string;name:string;document?:string|null }
+export interface VehicleRecord { id:string;tenantId:string;companyId:string;plate:string }
+export interface CreateDriverInput { companyId:string;name:string;document?:string }
+export interface CreateVehicleInput { companyId:string;plate:string }

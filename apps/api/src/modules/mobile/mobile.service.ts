@@ -6,6 +6,12 @@ export type CommandResult={clientCommandId:string;status:'applied'|'duplicate'|'
 @Injectable()
 export class MobileService {
  constructor(private readonly prisma:PrismaService){}
+ async assignedActivities(tenantId:string,driverId:string){
+  const driver=await this.prisma.driver.findUnique({where:{tenantId_id:{tenantId,id:driverId}}});
+  if(!driver)return [];
+  const rows=await this.prisma.activity.findMany({where:{tenantId,assignments:{some:{driverId,endedAt:null}},status:{notIn:[DbStatus.CANCELED,DbStatus.RETURNED]}},orderBy:{updatedAt:'desc'}});
+  return rows.map(row=>({id:row.id,code:row.externalReference??row.id.slice(0,8),customer:row.description,address:row.address,window:'A confirmar',kind:'Entrega' as const,status:row.status.toLowerCase(),updatedAt:row.updatedAt.toISOString(),version:row.version}));
+ }
  async commands(tenantId:string,items:MobileCommandDto[]):Promise<CommandResult[]> {
   const results:CommandResult[]=[];
   for(const command of items) results.push(await this.command(tenantId,command));

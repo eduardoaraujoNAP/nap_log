@@ -9,9 +9,24 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: nap_log_test
+          POSTGRES_USER: nap_log
+          POSTGRES_PASSWORD: nap_log_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nap_log -d nap_log_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://nap_log:nap_log_test@127.0.0.1:5432/nap_log_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -22,12 +37,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nap-log/api prisma:generate
+      - run: pnpm --filter @nap-log/api prisma:migrate
       - run: pnpm typecheck
+      - run: pnpm lint
       - run: pnpm test
+      - run: pnpm --filter @nap-log/api test:e2e
       - run: pnpm build
-
-  compose:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker compose config --quiet
+      - run: git diff --check
+      - run: docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet
+        env:
+          PRODUCTION_ENV_FILE: .env.production.example

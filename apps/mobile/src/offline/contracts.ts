@@ -16,6 +16,7 @@ export interface LocalStore {
   initialize(): Promise<void>;
   listActivities(): Promise<Activity[]>;
   saveActivities(activities: Activity[]): Promise<void>;
+  replaceActivities(activities: Activity[]): Promise<void>;
   getMetadata(key: string): Promise<string | undefined>;
   setMetadata(key: string, value: string): Promise<void>;
   saveEvidenceManifest(manifest: EvidenceManifest): Promise<void>;

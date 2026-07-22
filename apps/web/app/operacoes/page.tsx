@@ -1,8 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { activitiesApi, isApiConfigured } from "@/lib/api";
-import { activities as mockActivities } from "@/lib/mock-data";
+import { activitiesApi } from "@/lib/api";
 import type { ApiActivity, ApiActivityStatus, CreateActivityInput } from "@/lib/types";
 
 const statusLabels: Record<ApiActivityStatus, string> = {
@@ -12,13 +11,6 @@ const statusLabels: Record<ApiActivityStatus, string> = {
   rescheduled: "Reagendada", canceled: "Cancelada", returned: "Retornada",
 };
 
-const demoRows: ApiActivity[] = mockActivities.map((item, index) => ({
-  id: `demo-${item.id}`, tenantId: "demo", externalReference: item.reference,
-  description: `${item.kind} · ${item.customer}`, address: item.address,
-  status: (["en_route", "on_site", "failed", "awaiting_assignment", "completed", "assigned"] as ApiActivityStatus[])[index],
-  assignedDriverId: item.driver === "Não atribuído" ? undefined : `Motorista: ${item.driver}`,
-  version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-}));
 
 function Status({ value }: { value: ApiActivityStatus }) {
   const tone = value === "completed" ? "concluida" : value === "failed" || value === "canceled" ? "atencao" : value === "awaiting_assignment" || value === "draft" ? "pendente" : value === "on_site" ? "no-local" : "em-rota";
@@ -30,16 +22,15 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
 }
 
 export default function Operations() {
-  const [rows, setRows] = useState<ApiActivity[]>(isApiConfigured ? [] : demoRows);
+  const [rows, setRows] = useState<ApiActivity[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(isApiConfigured);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [creating, setCreating] = useState(false);
   const [assigning, setAssigning] = useState<ApiActivity>();
 
   const load = useCallback(async () => {
-    if (!isApiConfigured) return;
     setLoading(true); setError(undefined);
     try { setRows(await activitiesApi.list()); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível carregar as atividades."); }
@@ -64,13 +55,12 @@ export default function Operations() {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível atribuir o motorista."); throw reason; }
   }
 
-  return <div className="page"><div className="page-heading"><div><p className="eyebrow">GESTÃO OPERACIONAL</p><h1>Central de operações</h1><p>Gerencie e acompanhe todas as atividades em um só lugar.</p></div><button className="button primary" disabled={!isApiConfigured} onClick={() => setCreating(true)}>＋ Nova atividade</button></div>
-    {!isApiConfigured && <div className="mode-banner demo"><b>Modo demonstração</b><span>Exibindo dados mock. Defina NEXT_PUBLIC_API_URL para operar dados reais com sua sessão.</span></div>}
-    {isApiConfigured && <div className="mode-banner live"><b>API conectada</b><span>Os dados desta tela são carregados do tenant configurado.</span><button onClick={() => void load()} disabled={loading}>↻ Atualizar</button></div>}
+  return <div className="page"><div className="page-heading"><div><p className="eyebrow">GESTÃO OPERACIONAL</p><h1>Central de operações</h1><p>Gerencie e acompanhe todas as atividades em um só lugar.</p></div><button className="button primary" onClick={() => setCreating(true)}>＋ Nova atividade</button></div>
+    <div className="mode-banner live"><b>API conectada</b><span>Os dados desta tela são carregados do tenant configurado.</span><button onClick={() => void load()} disabled={loading}>↻ Atualizar</button></div>
     {error && <div className="feedback error" role="alert"><span>{error}</span><button onClick={() => setError(undefined)}>×</button></div>}
     {notice && <div className="feedback success" role="status"><span>{notice}</span><button onClick={() => setNotice(undefined)}>×</button></div>}
     <div className="tabs"><button className="active">Todas <span>{rows.length}</span></button><button>Em andamento <span>{Math.max(rows.length - pending - completed, 0)}</span></button><button>Pendentes <span>{pending}</span></button><button>Concluídas <span>{completed}</span></button></div>
-    <section className="panel operations-panel"><div className="filters"><label className="search-field">⌕<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por referência, descrição ou endereço"/></label><select aria-label="Status"><option>Todos os status</option>{Object.entries(statusLabels).map(([value,label]) => <option key={value}>{label}</option>)}</select><button className="button secondary" onClick={() => void load()} disabled={loading || !isApiConfigured}>↻ Revalidar</button></div><div className="table-wrap"><table><thead><tr><th>Atividade</th><th>Descrição / Destino</th><th>Motorista</th><th>Atualização</th><th>Status</th><th>Ação</th></tr></thead><tbody>{filtered.map(activity => <tr key={activity.id}><td><b>{activity.externalReference || activity.id.slice(0, 8)}</b><small>v{activity.version} · {activity.id.slice(0, 8)}</small></td><td><b>{activity.description}</b><small>{activity.address}</small></td><td>{activity.assignedDriverId ? <span className="uuid-value">{activity.assignedDriverId}</span> : "Não atribuído"}</td><td><b>{new Date(activity.updatedAt).toLocaleDateString("pt-BR")}</b><small>{new Date(activity.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</small></td><td><Status value={activity.status}/></td><td><button className="assign-button" disabled={!isApiConfigured || activity.status !== "awaiting_assignment"} onClick={() => setAssigning(activity)}>Atribuir</button></td></tr>)}</tbody></table>{loading && <div className="empty loading-state"><i/>Carregando atividades...</div>}{!loading && filtered.length === 0 && <div className="empty">Nenhuma atividade encontrada.</div>}</div><footer className="pagination"><span>Mostrando {filtered.length} de {rows.length} atividades</span><div><button disabled>‹</button><button className="current">1</button><button disabled>›</button></div></footer></section>
+    <section className="panel operations-panel"><div className="filters"><label className="search-field">⌕<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por referência, descrição ou endereço"/></label><select aria-label="Status"><option>Todos os status</option>{Object.entries(statusLabels).map(([value,label]) => <option key={value}>{label}</option>)}</select><button className="button secondary" onClick={() => void load()}disabled={loading}>↻ Revalidar</button></div><div className="table-wrap"><table><thead><tr><th>Atividade</th><th>Descrição / Destino</th><th>Motorista</th><th>Atualização</th><th>Status</th><th>Ação</th></tr></thead><tbody>{filtered.map(activity => <tr key={activity.id}><td><b>{activity.externalReference || activity.id.slice(0, 8)}</b><small>v{activity.version} · {activity.id.slice(0, 8)}</small></td><td><b>{activity.description}</b><small>{activity.address}</small></td><td>{activity.assignedDriverId ? <span className="uuid-value">{activity.assignedDriverId}</span> : "Não atribuído"}</td><td><b>{new Date(activity.updatedAt).toLocaleDateString("pt-BR")}</b><small>{new Date(activity.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</small></td><td><Status value={activity.status}/></td><td><button className="assign-button"disabled={activity.status !== "awaiting_assignment"} onClick={() => setAssigning(activity)}>Atribuir</button></td></tr>)}</tbody></table>{loading && <div className="empty loading-state"><i/>Carregando atividades...</div>}{!loading && filtered.length === 0 && <div className="empty">Nenhuma atividade encontrada.</div>}</div><footer className="pagination"><span>Mostrando {filtered.length} de {rows.length} atividades</span><div><button disabled>‹</button><button className="current">1</button><button disabled>›</button></div></footer></section>
     {creating && <CreateModal onClose={() => setCreating(false)} onSubmit={createActivity}/>} {assigning && <AssignModal activity={assigning} onClose={() => setAssigning(undefined)} onSubmit={assignActivity}/>} 
   </div>;
 }

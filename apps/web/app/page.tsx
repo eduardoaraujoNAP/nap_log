@@ -1,15 +1,47 @@
+"use client";
+
 import Link from "next/link";
-import { StatusBadge } from "@/components/status-badge";
-import { activities, drivers, metrics } from "@/lib/mock-data";
+import { useEffect, useMemo, useState } from "react";
+import { activitiesApi } from "@/lib/api";
+import type { ApiActivity, ApiActivityStatus } from "@/lib/types";
+
+const labels: Record<ApiActivityStatus, string> = {
+  draft: "Rascunho", awaiting_assignment: "Aguardando atribuição", assigned: "Atribuída",
+  accepted: "Aceita", en_route: "Em rota", near_destination: "Próxima", on_site: "No local",
+  in_service: "Em atendimento", completed: "Concluída", failed: "Falhou",
+  rescheduled: "Reagendada", canceled: "Cancelada", returned: "Retornada",
+};
+const activeStates = new Set<ApiActivityStatus>(["assigned", "accepted", "en_route", "near_destination", "on_site", "in_service"]);
+const attentionStates = new Set<ApiActivityStatus>(["failed", "canceled", "returned"]);
 
 export default function Dashboard() {
+  const [activities, setActivities] = useState<ApiActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  useEffect(() => { activitiesApi.list().then(setActivities).catch(reason => setError(reason instanceof Error ? reason.message : "Falha ao carregar a operação.")).finally(() => setLoading(false)); }, []);
+  const today = useMemo(() => new Date(), []);
+  const todays = useMemo(() => activities.filter(item => { const date = new Date(item.createdAt); return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate(); }), [activities, today]);
+  const completed = todays.filter(item => item.status === "completed").length;
+  const active = todays.filter(item => activeStates.has(item.status)).length;
+  const attention = todays.filter(item => attentionStates.has(item.status)).length;
+  const pending = todays.filter(item => item.status === "awaiting_assignment" || item.status === "draft").length;
+  const recent = [...activities].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 8);
+  const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, count: todays.filter(item => item.status === "completed" && new Date(item.updatedAt).getHours() === hour).length })).filter(item => item.hour >= 6 && item.hour <= 22);
+  const maxHourly = Math.max(1, ...hourly.map(item => item.count));
+  const metrics = [
+    { label: "Atividades hoje", value: todays.length, detail: `${pending} aguardando atribuição`, tone: "blue", icon: "▦" },
+    { label: "Concluídas", value: completed, detail: todays.length ? `${Math.round(completed / todays.length * 100)}% da operação` : "Sem atividades hoje", tone: "green", icon: "✓" },
+    { label: "Em andamento", value: active, detail: "Estados operacionais ativos", tone: "purple", icon: "↗" },
+    { label: "Precisam de atenção", value: attention, detail: "Falhas, cancelamentos ou retornos", tone: "orange", icon: "!" },
+  ];
   return <div className="page">
-    <div className="page-heading"><div><p className="eyebrow">QUARTA-FEIRA, 15 DE JULHO</p><h1>Olá, Lucas <span>👋</span></h1><p>Acompanhe o que está acontecendo na sua operação hoje.</p></div><div className="heading-actions"><button className="button secondary">↗ Exportar</button><Link href="/operacoes" className="button primary">＋ Nova atividade</Link></div></div>
-    <section className="metric-grid">{metrics.map((item, index) => <article className={`metric-card ${item.tone}`} key={item.label}><div className="metric-top"><span className="metric-icon">{["▦","✓","↗","!"][index]}</span>{item.trend && <small>{item.trend}</small>}</div><strong>{item.value}</strong><h3>{item.label}</h3><p>{item.detail}</p></article>)}</section>
+    <div className="page-heading"><div><p className="eyebrow">{today.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).toUpperCase()}</p><h1>Visão geral da operação</h1><p>Indicadores calculados diretamente das atividades registradas.</p></div><Link href="/operacoes" className="button primary">＋ Nova atividade</Link></div>
+    {error && <div className="feedback error" role="alert"><span>{error}</span></div>}
+    <section className="metric-grid">{metrics.map(item => <article className={`metric-card ${item.tone}`} key={item.label}><div className="metric-top"><span className="metric-icon">{item.icon}</span></div><strong>{loading ? "…" : item.value}</strong><h3>{item.label}</h3><p>{item.detail}</p></article>)}</section>
     <section className="dashboard-grid">
-      <article className="panel chart-panel"><div className="panel-heading"><div><h2>Ritmo da operação</h2><p>Atividades concluídas por hora</p></div><select aria-label="Período"><option>Hoje</option><option>7 dias</option></select></div><div className="chart"><div className="ylabels"><span>40</span><span>30</span><span>20</span><span>10</span><span>0</span></div><svg viewBox="0 0 700 190" preserveAspectRatio="none" aria-label="Gráfico de atividades"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#326bff" stopOpacity=".24"/><stop offset="1" stopColor="#326bff" stopOpacity="0"/></linearGradient></defs><path className="gridline" d="M0 18H700M0 57H700M0 96H700M0 135H700M0 174H700"/><path fill="url(#area)" d="M0 165 C70 158,80 140,140 145 S220 120,280 125 S350 95,420 105 S490 54,560 70 S630 35,700 28 L700 190 L0 190Z"/><path className="chart-line" d="M0 165 C70 158,80 140,140 145 S220 120,280 125 S350 95,420 105 S490 54,560 70 S630 35,700 28"/></svg><div className="xlabels"><span>06h</span><span>08h</span><span>10h</span><span>12h</span><span>14h</span><span>16h</span><span>18h</span></div></div></article>
-      <article className="panel drivers-panel"><div className="panel-heading"><div><h2>Motoristas em campo</h2><p>18 ativos agora</p></div><Link href="/mapa">Ver mapa</Link></div><div className="driver-list">{drivers.slice(0,4).map(driver => <div className="driver" key={driver.id}><span className="avatar">{driver.initials}<i className={driver.status === "Disponível" ? "available" : ""}/></span><div><b>{driver.name}</b><small>{driver.vehicle}</small></div><span className="driver-state">{driver.lastUpdate}</span></div>)}</div></article>
+      <article className="panel chart-panel"><div className="panel-heading"><div><h2>Conclusões por hora</h2><p>Dados confirmados da operação de hoje</p></div></div><div className="real-chart">{hourly.map(item => <div className="real-chart-column" key={item.hour}><div className="real-chart-value">{item.count || ""}</div><div className="real-chart-bar" style={{ height: `${Math.max(3, item.count / maxHourly * 140)}px` }}/><small>{String(item.hour).padStart(2, "0")}h</small></div>)}</div></article>
+      <article className="panel drivers-panel"><div className="panel-heading"><div><h2>Distribuição por status</h2><p>{activities.length} atividades cadastradas</p></div></div><div className="status-summary">{Object.entries(labels).map(([status, label]) => { const count = activities.filter(item => item.status === status).length; return count ? <div key={status}><span>{label}</span><strong>{count}</strong></div> : null; })}{!loading && activities.length === 0 && <p className="empty">Nenhuma atividade cadastrada.</p>}</div></article>
     </section>
-    <section className="panel recent"><div className="panel-heading"><div><h2>Atividades recentes</h2><p>Últimas atualizações da operação</p></div><Link href="/operacoes">Ver todas →</Link></div><div className="table-wrap"><table><thead><tr><th>Atividade</th><th>Cliente</th><th>Motorista</th><th>Agendamento</th><th>Status</th><th></th></tr></thead><tbody>{activities.slice(0,5).map(activity => <tr key={activity.id}><td><b>{activity.reference}</b><small>{activity.kind}</small></td><td><b>{activity.customer}</b><small>{activity.address}</small></td><td>{activity.driver}</td><td>{activity.scheduledAt}</td><td><StatusBadge status={activity.status}/></td><td>•••</td></tr>)}</tbody></table></div></section>
+    <section className="panel recent"><div className="panel-heading"><div><h2>Atividades recentes</h2><p>Últimas atualizações persistidas</p></div><Link href="/operacoes">Ver todas →</Link></div><div className="table-wrap"><table><thead><tr><th>Atividade</th><th>Descrição / destino</th><th>Motorista</th><th>Atualização</th><th>Status</th></tr></thead><tbody>{recent.map(activity => <tr key={activity.id}><td><b>{activity.externalReference || activity.id.slice(0, 8)}</b><small>v{activity.version}</small></td><td><b>{activity.description}</b><small>{activity.address}</small></td><td>{activity.assignedDriverId || "Não atribuído"}</td><td>{new Date(activity.updatedAt).toLocaleString("pt-BR")}</td><td><span className="status"><i/>{labels[activity.status]}</span></td></tr>)}</tbody></table>{!loading && recent.length === 0 && <div className="empty">Nenhuma atividade encontrada.</div>}</div></section>
   </div>;
 }

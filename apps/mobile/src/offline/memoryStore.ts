@@ -12,6 +12,7 @@ export class MemoryStore implements LocalStore {
   async initialize() {}
   async listActivities() { return [...this.activities]; }
   async saveActivities(activities: Activity[]) { this.activities = [...activities]; }
+  async replaceActivities(activities: Activity[]) { this.activities = [...activities]; }
   async getMetadata(key: string) { return this.metadata.get(key); }
   async setMetadata(key: string, value: string) { this.metadata.set(key, value); }
   async saveEvidenceManifest(manifest: EvidenceManifest) { this.evidence.set(manifest.id, structuredClone(manifest)); }

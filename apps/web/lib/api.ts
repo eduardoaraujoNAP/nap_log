@@ -1,7 +1,4 @@
-import type { ApiActivity, AssignActivityInput, CreateActivityInput } from "./types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-export const isApiConfigured = Boolean(API_URL);
+import type { ApiActivity, AssignActivityInput, CreateActivityInput, CreateDriverInput, CreateVehicleInput, DriverRecord, LatestPosition, VehicleRecord } from "./types";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -11,7 +8,6 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (!API_URL) throw new ApiError(0, "API não configurada");
   const response = await fetch(`/api${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init.headers },
@@ -28,4 +24,15 @@ export const activitiesApi = {
   list: () => apiRequest<ApiActivity[]>("/activities", { cache: "no-store" }),
   create: (input: CreateActivityInput) => apiRequest<ApiActivity>("/activities", { method: "POST", body: JSON.stringify(input) }),
   assign: (id: string, input: AssignActivityInput) => apiRequest<ApiActivity>(`/activities/${id}/assign`, { method: "POST", body: JSON.stringify(input) }),
+};
+
+export const trackingApi = {
+  positions: () => apiRequest<LatestPosition[]>("/tracking/positions", { cache: "no-store" }),
+};
+
+export const fleetApi = {
+  drivers: () => apiRequest<DriverRecord[]>("/drivers", { cache: "no-store" }),
+  createDriver: (input:CreateDriverInput) => apiRequest<DriverRecord>("/drivers", { method:"POST",body:JSON.stringify(input) }),
+  vehicles: () => apiRequest<VehicleRecord[]>("/vehicles", { cache: "no-store" }),
+  createVehicle: (input:CreateVehicleInput) => apiRequest<VehicleRecord>("/vehicles", { method:"POST",body:JSON.stringify(input) }),
 };

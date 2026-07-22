@@ -19,7 +19,7 @@ export class JwtAuthGuard implements CanActivate{
  async canActivate(context:ExecutionContext):Promise<boolean>{
   if(this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY,[context.getHandler(),context.getClass()]))return true;
   const request=context.switchToHttp().getRequest<FastifyRequest&{user?:AuthPrincipal}>();
-  if(this.bypass){const raw=request.headers['x-tenant-id'],id=Array.isArray(raw)?raw[0]:raw;if(!id)throw new UnauthorizedException('Missing development tenant');this.tenant.set(id);request.user={subject:'dev-bypass',tenantId:id,permissions:['*'],claims:{}};return true}
+  if(this.bypass){const raw=request.headers['x-tenant-id'],id=Array.isArray(raw)?raw[0]:raw;if(!id)throw new UnauthorizedException('Missing development tenant');const driverRaw=request.headers['x-driver-id'],driverId=Array.isArray(driverRaw)?driverRaw[0]:driverRaw;this.tenant.set(id);request.user={subject:'dev-bypass',tenantId:id,permissions:['*'],claims:{...(driverId?{driver_id:driverId}:{})}};return true}
   const auth=request.headers.authorization;if(!auth?.startsWith('Bearer ')||!this.jwks||!this.issuer||!this.audience)throw new UnauthorizedException('Bearer token required');
   const {payload}=await jwtVerify(auth.slice(7),this.jwks,{issuer:this.issuer,audience:this.audience}).catch(()=>{throw new UnauthorizedException('Invalid bearer token')});
   const tenantId=typeof payload.tenant_id==='string'?payload.tenant_id:undefined;if(!tenantId)throw new UnauthorizedException('Token has no tenant_id');

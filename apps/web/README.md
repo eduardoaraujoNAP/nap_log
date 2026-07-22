@@ -11,7 +11,7 @@ Painel Next.js protegido por OIDC/Keycloak via Auth.js. O fluxo usa Authorizatio
 | `AUTH_KEYCLOAK_SECRET` | Client secret OIDC |
 | `AUTH_KEYCLOAK_ISSUER` | Issuer do realm, por exemplo `https://sso.exemplo/realms/nap-log` |
 | `AUTH_URL` | URL pública do painel usada nos callbacks Auth.js |
-| `NEXT_PUBLIC_API_URL` | URL server-side da API logística, incluindo `/v1` |
+| `API_URL` | URL server-side da API logística, incluindo `/v1` |
 | `DEV_AUTH_BYPASS` | Aceito somente quando `NODE_ENV=development`; use `true` para bypass local |
 | `DEV_DEMO_TENANT_ID` | UUID explícito enviado como tenant apenas durante o bypass local |
 
