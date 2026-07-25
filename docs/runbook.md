@@ -1,23 +1,44 @@
-# Runbook do piloto
+# Runbook operacional
 
-## Verificações rotineiras
+Use este documento durante a operação. A preparação e implantação completas estão em [production.md](./production.md).
 
-- API e dependências respondendo aos health checks.
-- Espaço livre do PostgreSQL, MinIO e volume de backups.
-- Idade da fila mais antiga e quantidade de itens na DLQ.
-- Motoristas sem atualização de GPS e comandos móveis pendentes.
-- Falhas de geração de PDF e entrega de webhooks.
+## Verificação diária
+
+1. Consulte `/v1/health` e `/v1/health/ready`.
+2. Confirme API, worker, PostgreSQL, Redis, MinIO e Keycloak saudáveis.
+3. Verifique espaço livre, conexões do banco, idade da fila mais antiga, jobs falhos e heartbeat do worker.
+4. Confirme a execução do backup, o checksum e a cópia fora do host.
+5. Investigue motoristas sem GPS durante jornadas ativas e comandos móveis pendentes.
 
 ## Backup e restauração
 
-1. Executar backup lógico diário do PostgreSQL e cópia versionada dos buckets MinIO.
-2. Criptografar e copiar o conjunto para um destino fora do nó de produção.
-3. Registrar checksum, horário, versão do schema e resultado no inventário de backups.
-4. Restaurar mensalmente em ambiente isolado e executar smoke tests de login, consulta de atividade e comprovante.
+Execute `infra/scripts/backup.sh` diariamente. Registre commit da aplicação, versão do schema, horário, tamanho, checksum e destino externo.
 
-## Incidentes
+Uma vez por mês:
 
-- Suspender ingestão externa quando houver risco de corrupção ou falta de espaço.
-- Preservar logs de auditoria e correlation IDs; nunca copiar PII para canais de suporte.
-- Revogar sessões e dispositivos comprometidos pelo Keycloak/API.
-- Reprocessar outbox ou webhooks somente por operação idempotente e auditada.
+1. Provisione ambiente isolado sem acesso ao tráfego real.
+2. Verifique `SHA256SUMS`.
+3. Restaure PostgreSQL e o bucket.
+4. Inicie a mesma versão da aplicação.
+5. Teste login, consulta, rota, evidência e comprovante.
+6. Registre RPO, RTO, duração e resultado.
+
+Não restaure sobre o banco ativo durante um ensaio.
+
+## Incidente
+
+1. Classifique impacto e declare responsável.
+2. Preserve logs, correlation IDs e versão; não copie PII para canais de suporte.
+3. Suspenda ingestão ou escrita quando houver risco de corrupção ou falta de espaço.
+4. Revogue sessões e dispositivos comprometidos pelo Keycloak.
+5. Reprocesse outbox/jobs apenas por operação idempotente e auditada.
+6. Aplique o rollback descrito em `production.md` quando necessário.
+7. Após recuperar, documente causa, impacto e prevenção.
+
+## Rotação de segredos
+
+Rotacione um segredo por vez, atualize os consumidores e valide health/smoke. Priorize imediatamente qualquer credencial exposta. Para OIDC, preserve uma janela controlada de transição; para `INTERNAL_SERVICE_KEY`, atualize API e worker na mesma janela.
+
+## Escalonamento
+
+Mantenha fora do repositório a lista atual de responsáveis, contatos do plantão, provedores de DNS/TLS, Keycloak, armazenamento e destino de backup.

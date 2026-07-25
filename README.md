@@ -28,4 +28,8 @@ Antes do primeiro uso, configure um realm e os clientes web/mobile/API no Keyclo
 - GPS apenas durante jornada autorizada.
 
 Consulte [architecture.md](./architecture.md) para os requisitos de produto e arquitetura.
-Para preparar o stack endurecido, consulte [docs/production.md](./docs/production.md).
+Para implantação e operação:
+
+- [Guia de produção](./docs/production.md)
+- [Runbook operacional](./docs/runbook.md)
+- [Infraestrutura](./infra/README.md)

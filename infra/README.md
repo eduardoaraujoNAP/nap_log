@@ -20,3 +20,9 @@ define os papéis `admin`, `manager`, `operator` e `driver`, além dos clientes
 O segredo `change-me-dev-web-client-secret` do cliente web existe somente para
 facilitar o bootstrap local. Ele deve ser obrigatoriamente rotacionado no
 Keycloak e configurado por secret manager antes de homologação ou produção.
+
+## Produção
+
+O arquivo `docker-compose.prod.yml` contém API, painel, worker, migração e dependências com redes internas e health checks. As portas publicadas escutam em `127.0.0.1` e devem ficar atrás de proxy TLS.
+
+O procedimento completo, incluindo secrets, DNS, Keycloak, S3, rollout, observabilidade, backup e rollback, está em [`docs/production.md`](../docs/production.md). A rotina diária de incidentes e restauração está em [`docs/runbook.md`](../docs/runbook.md).
