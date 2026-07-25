@@ -17,7 +17,7 @@ Use imagens e commits imutáveis. Não implante diretamente de uma árvore Git c
 
 | Serviço | Nome de exemplo | Destino local |
 |---|---|---|
-| Painel | `app-log.gruponova.lan` | `127.0.0.1:3000` |
+| Painel | `nap-log.gruponova.lan` | `127.0.0.1:3000` |
 | API | `api-log.gruponova.lan` | `127.0.0.1:3301` |
 | Identidade | `auth-log.gruponova.lan` | `127.0.0.1:8280` |
 | Objetos | `objects-log.gruponova.lan` | endpoint S3/MinIO |
@@ -195,7 +195,7 @@ Credenciais de assinatura, projeto EAS, APNs/FCM e cadastros nas lojas devem ser
 O proxy reverso faz parte do Compose em `infra/nginx/default.conf.template`. Ele publica 80/443, redireciona HTTP para HTTPS e encaminha os hosts do painel, API, Keycloak e objetos. Configure no `.env.production`:
 
 ```env
-APP_HOST=app-log.gruponova.lan
+APP_HOST=nap-log.gruponova.lan
 API_HOST=api-log.gruponova.lan
 AUTH_HOST=auth-log.gruponova.lan
 OBJECTS_HOST=objects-log.gruponova.lan
