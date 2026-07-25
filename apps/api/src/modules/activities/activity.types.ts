@@ -1,10 +1,20 @@
 export const activityStatuses = [
-  'draft', 'awaiting_assignment', 'assigned', 'accepted', 'en_route',
-  'near_destination', 'on_site', 'in_service', 'completed', 'failed',
-  'rescheduled', 'canceled', 'returned',
+  "draft",
+  "awaiting_assignment",
+  "assigned",
+  "accepted",
+  "en_route",
+  "near_destination",
+  "on_site",
+  "in_service",
+  "completed",
+  "failed",
+  "rescheduled",
+  "canceled",
+  "returned",
 ] as const;
 
-export type ActivityStatus = typeof activityStatuses[number];
+export type ActivityStatus = (typeof activityStatuses)[number];
 
 export interface Activity {
   id: string;
@@ -12,9 +22,17 @@ export interface Activity {
   externalReference?: string;
   description: string;
   address: string;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
   status: ActivityStatus;
   assignedDriverId?: string;
   version: number;
   createdAt: string;
   updatedAt: string;
+  failure?: {
+    reason: string;
+    comment?: string;
+    occurredAt: string;
+    deviceId?: string;
+  };
 }

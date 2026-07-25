@@ -4,11 +4,11 @@
 
 1. Copie `.env.production.example` para `.env.production`.
 2. Substitua todos os valores `replace-*` por segredos aleatórios.
-3. Configure DNS e TLS no proxy reverso para painel, API e Keycloak.
+3. Configure DNS e TLS no proxy reverso para painel, API, Keycloak e o endpoint público do armazenamento (`S3_PUBLIC_ENDPOINT`).
 4. Configure no Keycloak os claims `tenant_id`, `permissions` e, para motoristas, `driver_id`.
 5. Crie o bucket privado definido por `S3_BUCKET`, com versionamento, criptografia e política de retenção.
 
-Nunca versione `.env.production`. A API recusa inicialização em produção quando variáveis obrigatórias estão ausentes, o bypass está habilitado, os segredos internos são fracos ou a URL pública de comprovantes não usa HTTPS.
+Nunca versione `.env.production`. A API recusa inicialização em produção quando variáveis obrigatórias estão ausentes, o bypass está habilitado, os segredos internos são fracos ou as URLs públicas de comprovantes e armazenamento não usam HTTPS. O `S3_PUBLIC_ENDPOINT` deve encaminhar para o MinIO preservando o host usado na assinatura; o bucket continua privado.
 
 ## Validação e rollout
 

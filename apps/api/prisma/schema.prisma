@@ -41,6 +41,7 @@ model Tenant {
  receivers Receiver[]
  evidences Evidence[]
  proofs Proof[]
+ routes Route[]
  outboxEvents OutboxEvent[]
  @@map("tenants")
 }
@@ -103,6 +104,7 @@ model Driver {
  @@unique([tenantId,id])
  @@unique([tenantId,document])
  @@index([tenantId,companyId])
+ routes Route[]
  @@map("drivers")
 }
 model Vehicle {
@@ -124,6 +126,8 @@ model Activity {
  externalReference String? @map("external_reference") @db.VarChar(120)
  description String @db.VarChar(500)
  address String @db.VarChar(500)
+ destinationLatitude Float? @map("destination_latitude")
+ destinationLongitude Float? @map("destination_longitude")
  destination Unsupported("geography(Point,4326)")?
  status ActivityStatus @default(AWAITING_ASSIGNMENT)
  version Int @default(1)
@@ -136,6 +140,7 @@ model Activity {
  events ActivityEvent[]
  receivers Receiver[]
  evidences Evidence[]
+ routeStops RouteStop[]
  proofs Proof[]
  @@unique([tenantId,id])
  @@unique([tenantId,externalReference])
@@ -289,4 +294,35 @@ model ProofEvidence {
  evidence Evidence @relation(fields:[tenantId,evidenceId],references:[tenantId,id])
  @@id([tenantId,proofId,evidenceId])
  @@map("proof_evidences")
+}
+model Route {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ driverId String @map("driver_id") @db.Uuid
+ name String @db.VarChar(160)
+ plannedDate DateTime @map("planned_date") @db.Date
+ status String @default("planned") @db.VarChar(24)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+ updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+ tenant Tenant @relation(fields:[tenantId],references:[id],onDelete:Restrict)
+ driver Driver @relation(fields:[tenantId,driverId],references:[tenantId,id],onDelete:Restrict)
+ stops RouteStop[]
+ @@unique([tenantId,id])
+ @@index([tenantId,plannedDate,status])
+ @@index([tenantId,driverId,plannedDate])
+ @@map("routes")
+}
+model RouteStop {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ routeId String @map("route_id") @db.Uuid
+ activityId String @map("activity_id") @db.Uuid
+ sequence Int
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+ route Route @relation(fields:[tenantId,routeId],references:[tenantId,id],onDelete:Cascade)
+ activity Activity @relation(fields:[tenantId,activityId],references:[tenantId,id],onDelete:Restrict)
+ @@unique([tenantId,routeId,sequence])
+ @@unique([tenantId,routeId,activityId])
+ @@index([tenantId,activityId])
+ @@map("route_stops")
 }
