@@ -163,3 +163,29 @@ Mensalmente, restaure PostgreSQL e objetos em ambiente isolado, execute o smoke 
 - [ ] Smoke técnico e funcional aprovados.
 - [ ] Plano de rollback e responsáveis confirmados.
 - [ ] APNs/FCM e push testados em aparelhos reais, quando habilitados.
+
+## 12. Automação incluída
+
+Antes do primeiro rollout, execute o preflight com o arquivo real:
+
+```sh
+infra/scripts/preflight-production.sh .env.production
+```
+
+Para construir, migrar e subir o stack a partir de uma árvore Git limpa:
+
+```sh
+PRODUCTION_ENV_FILE=.env.production infra/scripts/deploy-production.sh
+```
+
+O preflight recusa variáveis ausentes, placeholders, segredos curtos, URLs públicas sem HTTPS e Compose inválido. O deploy não prossegue com alterações locais.
+
+Para o aplicativo, copie `apps/mobile/.env.production.example`, configure as três URLs/IDs públicos no ambiente EAS e use o perfil de `apps/mobile/eas.json`:
+
+```sh
+cd apps/mobile
+eas build --platform all --profile production
+eas submit --platform all --profile production
+```
+
+Credenciais de assinatura, projeto EAS, APNs/FCM e cadastros nas lojas devem ser fornecidos pelas contas oficiais da organização; não pertencem ao Git.

@@ -8,9 +8,9 @@ FROM base AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/worker/package.json apps/worker/package.json
-RUN pnpm install --no-frozen-lockfile --filter @nap-log/worker...
+RUN pnpm install --frozen-lockfile --filter @nap-log/worker...
 COPY apps/worker apps/worker
-RUN pnpm --filter @nap-log/worker build && pnpm --filter @nap-log/worker deploy --prod /prod/worker
+RUN pnpm --filter @nap-log/worker build && pnpm --filter @nap-log/worker deploy --legacy --prod /prod/worker
 
 FROM node:22-alpine AS runner
 WORKDIR /app

@@ -1,0 +1,11 @@
+{
+  "cli": { "version": ">= 14.0.0", "appVersionSource": "remote" },
+  "build": {
+    "preview": { "distribution": "internal" },
+    "production": {
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_DEV_AUTH_BYPASS": "false" }
+    }
+  },
+  "submit": { "production": {} }
+}
