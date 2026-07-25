@@ -17,10 +17,10 @@ Use imagens e commits imutáveis. Não implante diretamente de uma árvore Git c
 
 | Serviço | Nome de exemplo | Destino local |
 |---|---|---|
-| Painel | `app.example.com` | `127.0.0.1:3000` |
-| API | `api.example.com` | `127.0.0.1:3301` |
-| Identidade | `auth.example.com` | `127.0.0.1:8280` |
-| Objetos | `objects.example.com` | endpoint S3/MinIO |
+| Painel | `app-log.gruponova.lan` | `127.0.0.1:3000` |
+| API | `api-log.gruponova.lan` | `127.0.0.1:3301` |
+| Identidade | `auth-log.gruponova.lan` | `127.0.0.1:8280` |
+| Objetos | `objects-log.gruponova.lan` | endpoint S3/MinIO |
 
 O proxy deve terminar TLS, preservar `Host` e `X-Forwarded-*`, limitar tamanho e tempo de uploads e redirecionar HTTP para HTTPS. O host público do MinIO deve ser preservado porque participa da assinatura das URLs temporárias.
 
@@ -90,9 +90,9 @@ O serviço `migrate` executa `prisma migrate deploy` antes da API. Não reverta 
 Valide:
 
 ```sh
-curl --fail https://api.example.com/v1/health
-curl --fail https://api.example.com/v1/health/ready
-SMOKE_URL=https://api.example.com/v1/health \
+curl --fail https://api-log.gruponova.lan/v1/health
+curl --fail https://api-log.gruponova.lan/v1/health/ready
+SMOKE_URL=https://api-log.gruponova.lan/v1/health \
   SMOKE_REQUESTS=500 SMOKE_CONCURRENCY=25 node infra/scripts/load-smoke.mjs
 ```
 
@@ -195,10 +195,10 @@ Credenciais de assinatura, projeto EAS, APNs/FCM e cadastros nas lojas devem ser
 O proxy reverso faz parte do Compose em `infra/nginx/default.conf.template`. Ele publica 80/443, redireciona HTTP para HTTPS e encaminha os hosts do painel, API, Keycloak e objetos. Configure no `.env.production`:
 
 ```env
-APP_HOST=app.example.com
-API_HOST=api.example.com
-AUTH_HOST=auth.example.com
-OBJECTS_HOST=objects.example.com
+APP_HOST=app-log.gruponova.lan
+API_HOST=api-log.gruponova.lan
+AUTH_HOST=auth-log.gruponova.lan
+OBJECTS_HOST=objects-log.gruponova.lan
 ```
 
 Instale um certificado que cubra os quatro nomes em `infra/nginx/certs/fullchain.pem` e a chave em `infra/nginx/certs/privkey.pem`. Os arquivos são ignorados pelo Git e o preflight bloqueia o deploy quando estiverem ausentes. Consulte `infra/nginx/README.md` para renovação e reload.
