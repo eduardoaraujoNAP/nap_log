@@ -5,7 +5,7 @@ env_file="${1:-.env.production}"
 [ -f "$env_file" ] || { echo "Arquivo não encontrado: $env_file" >&2; exit 2; }
 [ -r "$env_file" ] || { echo "Arquivo sem permissão de leitura: $env_file" >&2; exit 2; }
 
-required='NODE_ENV POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DATABASE_URL REDIS_PASSWORD REDIS_URL S3_ENDPOINT S3_PUBLIC_ENDPOINT S3_BUCKET S3_ACCESS_KEY S3_SECRET_KEY OIDC_ISSUER OIDC_AUDIENCE KEYCLOAK_HOSTNAME KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD INTERNAL_SERVICE_KEY INTERNAL_API_URL PUBLIC_PROOF_BASE_URL API_URL AUTH_URL AUTH_SECRET AUTH_KEYCLOAK_ID AUTH_KEYCLOAK_SECRET AUTH_KEYCLOAK_ISSUER'
+required='NODE_ENV POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DATABASE_URL REDIS_PASSWORD REDIS_URL S3_ENDPOINT S3_PUBLIC_ENDPOINT S3_BUCKET S3_ACCESS_KEY S3_SECRET_KEY OIDC_ISSUER OIDC_AUDIENCE KEYCLOAK_HOSTNAME KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD INTERNAL_SERVICE_KEY INTERNAL_API_URL PUBLIC_PROOF_BASE_URL API_URL AUTH_URL AUTH_SECRET AUTH_KEYCLOAK_ID AUTH_KEYCLOAK_SECRET AUTH_KEYCLOAK_ISSUER APP_HOST API_HOST AUTH_HOST OBJECTS_HOST'
 for name in $required; do
   line="$(grep -E "^${name}=" "$env_file" | tail -n 1 || true)"
   value="${line#*=}"
@@ -20,6 +20,9 @@ for name in S3_PUBLIC_ENDPOINT PUBLIC_PROOF_BASE_URL AUTH_URL OIDC_ISSUER AUTH_K
 done
 for name in POSTGRES_PASSWORD REDIS_PASSWORD S3_SECRET_KEY KEYCLOAK_ADMIN_PASSWORD INTERNAL_SERVICE_KEY AUTH_SECRET AUTH_KEYCLOAK_SECRET; do
   [ "$(value_of "$name" | wc -c)" -ge 25 ] || { echo "$name deve ter pelo menos 24 caracteres" >&2; exit 2; }
+done
+for certificate in infra/nginx/certs/fullchain.pem infra/nginx/certs/privkey.pem; do
+  [ -s "$certificate" ] || { echo "Certificado TLS ausente: $certificate" >&2; exit 2; }
 done
 
 if docker compose version >/dev/null 2>&1; then

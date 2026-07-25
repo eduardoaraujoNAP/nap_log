@@ -189,3 +189,16 @@ eas submit --platform all --profile production
 ```
 
 Credenciais de assinatura, projeto EAS, APNs/FCM e cadastros nas lojas devem ser fornecidos pelas contas oficiais da organização; não pertencem ao Git.
+
+## 13. Nginx e TLS
+
+O proxy reverso faz parte do Compose em `infra/nginx/default.conf.template`. Ele publica 80/443, redireciona HTTP para HTTPS e encaminha os hosts do painel, API, Keycloak e objetos. Configure no `.env.production`:
+
+```env
+APP_HOST=app.example.com
+API_HOST=api.example.com
+AUTH_HOST=auth.example.com
+OBJECTS_HOST=objects.example.com
+```
+
+Instale um certificado que cubra os quatro nomes em `infra/nginx/certs/fullchain.pem` e a chave em `infra/nginx/certs/privkey.pem`. Os arquivos são ignorados pelo Git e o preflight bloqueia o deploy quando estiverem ausentes. Consulte `infra/nginx/README.md` para renovação e reload.

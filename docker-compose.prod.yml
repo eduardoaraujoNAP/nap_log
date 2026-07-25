@@ -1,4 +1,29 @@
 services:
+  nginx:
+    image: nginx:1.28-alpine
+    restart: unless-stopped
+    init: true
+    security_opt: [no-new-privileges:true]
+    environment:
+      APP_HOST: ${APP_HOST:?APP_HOST is required}
+      API_HOST: ${API_HOST:?API_HOST is required}
+      AUTH_HOST: ${AUTH_HOST:?AUTH_HOST is required}
+      OBJECTS_HOST: ${OBJECTS_HOST:?OBJECTS_HOST is required}
+      NGINX_ENVSUBST_FILTER: "^(APP_HOST|API_HOST|AUTH_HOST|OBJECTS_HOST)$$"
+    volumes:
+      - ./infra/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      web: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    ports: ["80:80", "443:443"]
+    networks: [edge, app]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
   postgres:
     image: postgis/postgis:16-3.4
     restart: unless-stopped
